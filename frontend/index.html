@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الكابشن الذكي</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background-color: #ffffff; border: 2px solid #4a5d23; border-radius: 12px; padding: 30px; width: 100%; max-width: 550px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+        h1 { color: #4a5d23; text-align: center; margin-bottom: 25px; font-size: 1.8rem; }
+        #mainContent { display: block; }
+        .upload-section { border: 2px dashed #4a5d23; border-radius: 8px; padding: 40px 20px; text-align: center; cursor: pointer; margin-bottom: 20px; background-color: #fcfcfc; transition: all 0.3s ease; }
+        .upload-section:hover { background-color: #f0f4eb; border-color: #3b4a1c; }
+        .upload-text { color: #4a5d23; font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; }
+        .file-name-display { color: #666; font-size: 0.9rem; margin-top: 10px; word-break: break-all; font-weight: bold; }
+        input[type="file"] { display: none; }
+        #previewContainer { display: none; margin-bottom: 20px; text-align: center; }
+        canvas { max-width: 100%; height: auto; border-radius: 8px; border: 2px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .settings-section { margin-bottom: 25px; padding: 15px; background-color: #fafafa; border: 1px solid #ddd; border-radius: 8px; }
+        .setting-group { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .setting-group:last-child { margin-bottom: 0; }
+        label { font-weight: bold; color: #4a5d23; flex-basis: 35%; }
+        select, input[type="color"], input[type="range"] { flex-basis: 60%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; cursor: pointer; }
+        input[type="color"] { height: 40px; padding: 2px; }
+        .size-val { display: inline-block; width: 30px; text-align: center; font-weight: bold; color: #4a5d23; }
+        .btn-process { background-color: #4a5d23; color: #ffffff; border: none; padding: 12px 20px; width: 100%; font-size: 1.1rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
+        .btn-process:hover:not(:disabled) { background-color: #3b4a1c; }
+        .btn-process:disabled { background-color: #99a882; cursor: not-allowed; opacity: 0.7; }
+        #progressCard { display: none; text-align: center; padding: 20px 0; }
+        .circular-progress { position: relative; height: 150px; width: 150px; border-radius: 50%; background: conic-gradient(#4a5d23 0deg, #e0e0e0 0deg); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .circular-progress::before { content: ""; position: absolute; height: 130px; width: 130px; border-radius: 50%; background-color: #ffffff; }
+        .progress-value { position: relative; font-size: 28px; font-weight: bold; color: #4a5d23; }
+        .status-message { text-align: center; margin-top: 15px; font-weight: bold; color: #4a5d23; font-size: 1.1rem; }
+        #outputVideo { width: 100%; margin-top: 0; border-radius: 8px; display: none; border: 2px solid #4a5d23; background-color: #000; }
+        .action-btn { background-color: #ffffff; color: #4a5d23; border: 2px solid #4a5d23; padding: 10px 20px; width: 100%; font-size: 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 15px; display: none; text-align: center; transition: all 0.3s; }
+        .action-btn:hover { background-color: #4a5d23; color: #ffffff; }
+        .error-text { color: #d93025; font-size: 0.9rem; margin-top: 10px; display: none; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="mainContent">
+            <h1>إضافة الكابشن التلقائي</h1>
+            <div class="upload-section" onclick="document.getElementById('videoInput').click()">
+                <div class="upload-text">اضغط هنا لاختيار فيديو</div>
+                <div style="font-size: 0.8rem; color: #777;">(الحد الأقصى للمدة: 60 ثانية)</div>
+                <div id="fileName" class="file-name-display">لم يتم اختيار ملف بعد</div>
+                <input type="file" id="videoInput" accept="video/mp4,video/x-m4v,video/mov,video/*" onchange="handleFileSelect()">
+            </div>
+            <div id="durationError" class="error-text">❌ عذراً، يجب أن يكون الفيديو 60 ثانية أو أقل.</div>
+            <div id="previewContainer">
+                <label style="display:block; margin-bottom:10px;">معاينة الكابشن:</label>
+                <canvas id="videoPreview"></canvas>
+            </div>
+            <div class="settings-section">
+                <div class="setting-group">
+                    <label for="fontSize">حجم الخط:</label>
+                    <div style="display:flex; align-items:center; flex-basis:60%; gap:10px;">
+                        <input type="range" id="fontSize" min="30" max="150" value="60" style="flex-grow:1;">
+                        <span id="sizeVal" class="size-val">60</span>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label for="fontColor">لون الكابشن:</label>
+                    <input type="color" id="fontColor" value="#ffa500">
+                </div>
+                <div class="setting-group">
+                    <label for="textPosition">موقع النص:</label>
+                    <select id="textPosition">
+                        <option value="center">وسط الشاشة</option>
+                        <option value="bottom">أسفل الشاشة</option>
+                        <option value="top">أعلى الشاشة</option>
+                    </select>
+                </div>
+            </div>
+            <button id="processBtn" class="btn-process" onclick="processVideo()" disabled>بدء المعالجة</button>
+            <div style="text-align:center; margin-top:15px; color:#666; font-size:0.85rem;">✨ نظام التنظيف التلقائي يعمل في الخلفية</div>
+        </div>
+        <div id="progressCard">
+            <h2 id="progressTitle" style="color: #4a5d23; margin-bottom: 25px;">جاري العمل على الفيديو</h2>
+            <div class="circular-progress" id="circularProgress">
+                <span class="progress-value" id="progressValue">0%</span>
+            </div>
+            <div id="statusText" class="status-message">جاري رفع الملف...</div>
+            <video id="outputVideo" controls></video>
+            <a id="downloadLink" download="captioned_video.mp4" style="text-decoration: none;">
+                <button id="downloadBtn" class="action-btn">تحميل الفيديو الجاهز</button>
+            </a>
+            <button id="resetBtn" class="action-btn" onclick="location.reload()">معالجة فيديو جديد</button>
+        </div>
+    </div>
+    <script>
+        let selectedFile = null; let videoElementForPreview = null;
+        function handleFileSelect() {
+            const fileInput = document.getElementById('videoInput'); const fileNameDisplay = document.getElementById('fileName'); const durationError = document.getElementById('durationError'); const processBtn = document.getElementById('processBtn');
+            if (fileInput.files.length === 0) return; const file = fileInput.files[0]; fileNameDisplay.innerText = "الملف المختار: " + file.name;
+            const videoElement = document.createElement('video'); videoElement.preload = 'metadata';
+            videoElement.onloadedmetadata = function() {
+                if (videoElement.duration > 60) { durationError.style.display = 'block'; processBtn.disabled = true; selectedFile = null; fileNameDisplay.style.color = "#d93025"; document.getElementById('previewContainer').style.display = 'none'; } 
+                else { durationError.style.display = 'none'; processBtn.disabled = false; selectedFile = file; fileNameDisplay.style.color = "#4a5d23"; videoElement.currentTime = 0.5; videoElementForPreview = videoElement; }
+            }
+            videoElement.onseeked = function() { document.getElementById('previewContainer').style.display = 'block'; updatePreview(); };
+            videoElement.src = URL.createObjectURL(file);
+        }
+        function updatePreview() {
+            if (!videoElementForPreview) return;
+            const canvas = document.getElementById('videoPreview'); const ctx = canvas.getContext('2d');
+            canvas.width = videoElementForPreview.videoWidth; canvas.height = videoElementForPreview.videoHeight;
+            ctx.drawImage(videoElementForPreview, 0, 0, canvas.width, canvas.height);
+            const fontSize = document.getElementById('fontSize').value; const fontColor = document.getElementById('fontColor').value; const position = document.getElementById('textPosition').value;
+            document.getElementById('sizeVal').innerText = fontSize; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            const text = "HISOKA"; const x = canvas.width / 2; let y;
+            if (position === 'top') { y = canvas.height * 0.15 + (fontSize / 2); } else if (position === 'bottom') { y = canvas.height * 0.85 - (fontSize / 2); } else { y = canvas.height / 2; }
+            ctx.strokeStyle = "black"; ctx.lineWidth = 5; ctx.strokeText(text, x, y); ctx.fillStyle = fontColor; ctx.fillText(text, x, y);
+        }
+        document.getElementById('fontSize').addEventListener('input', updatePreview); document.getElementById('fontColor').addEventListener('input', updatePreview); document.getElementById('textPosition').addEventListener('change', updatePreview);
+        function updateProgress(percent, text) { document.getElementById("progressValue").textContent = `${percent}%`; document.getElementById("circularProgress").style.background = `conic-gradient(#4a5d23 ${percent * 3.6}deg, #e0e0e0 0deg)`; if(text) document.getElementById("statusText").innerText = text; }
+        function showError(message) { updateProgress(0, message); document.getElementById("statusText").style.color = "#d93025"; document.getElementById('resetBtn').style.display = 'block'; document.getElementById('circularProgress').style.background = `conic-gradient(#d93025 360deg, #e0e0e0 0deg)`; document.getElementById('progressValue').style.color = "#d93025"; }
+        function processVideo() {
+            if (!selectedFile) return; document.getElementById('mainContent').style.display = 'none'; document.getElementById('progressCard').style.display = 'block';
+            const formData = new FormData(); formData.append('video', selectedFile); formData.append('fontColor', document.getElementById('fontColor').value); formData.append('position', document.getElementById('textPosition').value); formData.append('fontSize', document.getElementById('fontSize').value); 
+            const xhr = new XMLHttpRequest(); xhr.open('POST', "/process-video", true); xhr.responseType = 'json'; 
+            xhr.upload.addEventListener("progress", (event) => { if (event.lengthComputable) { updateProgress(Math.round((event.loaded / event.total) * 50), "جاري رفع الفيديو للسيرفر..."); } });
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const taskId = xhr.response.task_id; updateProgress(50, "تم الرفع! جاري المعالجة..."); let simulatedProgress = 50;
+                    const checkInterval = setInterval(async () => {
+                        try {
+                            const res = await fetch(`/status/${taskId}`); const data = await res.json();
+                            if (data.status === 'done') {
+                                clearInterval(checkInterval); document.getElementById('progressTitle').style.display = 'none'; document.getElementById('circularProgress').style.display = 'none'; document.getElementById('statusText').style.display = 'none';
+                                const videoUrl = `/download/${data.filename}`; const outputVideo = document.getElementById('outputVideo'); outputVideo.src = videoUrl; outputVideo.style.display = 'block'; document.getElementById('downloadLink').href = videoUrl; document.getElementById('downloadBtn').style.display = 'block'; document.getElementById('resetBtn').style.display = 'block';
+                            } else if (data.status === 'error') { clearInterval(checkInterval); showError("حدث خطأ في الخادم."); } 
+                            else { if (simulatedProgress < 95) { simulatedProgress += 1; updateProgress(simulatedProgress, "جاري المعالجة..."); } }
+                        } catch (e) { console.error(e); }
+                    }, 5000);
+                } else { showError("حدث خطأ أثناء رفع الفيديو."); }
+            };
+            xhr.onerror = function () { showError("انقطع الاتصال بالخادم."); }; xhr.send(formData);
+        }
+    </script>
+</body>
+</html>

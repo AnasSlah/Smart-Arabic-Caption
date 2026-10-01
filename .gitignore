@@ -1,0 +1,12 @@
+# تجاهل الفيديوهات
+backend/input_videos/*.mp4
+backend/output_videos/*.mp4
+*.mp4
+
+# تجاهل الموديل (لأن حجمه 3 جيجابايت)
+backend/models/
+
+# ملفات النظام والمؤقتة
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
